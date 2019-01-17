@@ -193,6 +193,7 @@ defmodule Bamboo.SMTPAdapter do
 
   defp add_attachment_header(body, %{ content_type: {content_type, "inline"} } = attachment) do
     << random :: size(32) >> = :crypto.strong_rand_bytes(4)
+
     body
     |> add_smtp_line("Content-Type: #{content_type}; name=\"#{attachment.filename}\"")
     |> add_smtp_line("Content-Disposition: inline; filename=\"#{attachment.filename}\"")
