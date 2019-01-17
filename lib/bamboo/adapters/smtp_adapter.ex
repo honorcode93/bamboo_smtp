@@ -191,6 +191,18 @@ defmodule Bamboo.SMTPAdapter do
     |> add_smtp_line(text_body)
   end
 
+  defp add_attachment_header(body, %{ content_type: {content_type, "inline"} } = attachment) do
+
+    IO.inspect("AAAAAAAAAAAAAAAAAAAAAA")
+    << random :: size(32) >> = :crypto.strong_rand_bytes(4)
+    body
+    |> add_smtp_line("Content-Type: #{attachment.content_type}; name=\"#{attachment.filename}\"")
+    |> add_smtp_line("Content-Disposition: attachment; filename=\"#{attachment.filename}\"")
+    |> add_smtp_line("Content-Transfer-Encoding: base64")
+    |> add_smtp_line("Content-Id: <#{attachment.filename}>")
+    |> add_smtp_line("X-Attachment-Id: #{random}")
+  end
+
   defp add_attachment_header(body, attachment) do
     << random :: size(32) >> = :crypto.strong_rand_bytes(4)
     body
