@@ -55,11 +55,11 @@ defmodule Bamboo.SMTPAdapter do
       message = """
       There was a problem sending the email through SMTP.
 
-      The error is #{inspect reason}
+      The error is #{inspect(reason)}
 
       More detail below:
 
-      #{inspect detail}
+      #{inspect(detail)}
       """
 
       %SMTPError{message: message, raw: raw}
@@ -88,9 +88,14 @@ defmodule Bamboo.SMTPAdapter do
   @doc false
   def supports_attachments?, do: true
 
+  defp handle_response({:error, :no_credentials = reason}) do
+    raise SMTPError, {reason, "Username and password were not provided for authentication."}
+  end
+
   defp handle_response({:error, reason, detail}) do
     raise SMTPError, {reason, detail}
   end
+
   defp handle_response(_) do
     :ok
   end
@@ -186,12 +191,24 @@ defmodule Bamboo.SMTPAdapter do
     |> add_smtp_line(text_body)
   end
 
+  defp add_attachment_header(body, %{ content_type: {content_type, "inline"} } = attachment) do
+    << random :: size(32) >> = :crypto.strong_rand_bytes(4)
+
+    body
+    |> add_smtp_line("Content-Type: #{content_type}; name=\"#{attachment.filename}\"")
+    |> add_smtp_line("Content-Disposition: inline; filename=\"#{attachment.filename}\"")
+    |> add_smtp_line("Content-Transfer-Encoding: base64")
+    |> add_smtp_line("Content-Id: <#{attachment.filename}>")
+    |> add_smtp_line("X-Attachment-Id: #{random}")
+  end
+
   defp add_attachment_header(body, attachment) do
     << random :: size(32) >> = :crypto.strong_rand_bytes(4)
     body
     |> add_smtp_line("Content-Type: #{attachment.content_type}; name=\"#{attachment.filename}\"")
     |> add_smtp_line("Content-Disposition: attachment; filename=\"#{attachment.filename}\"")
     |> add_smtp_line("Content-Transfer-Encoding: base64")
+    |> add_smtp_line("Content-Id: <#{attachment.filename}>")
     |> add_smtp_line("X-Attachment-Id: #{random}")
   end
 
